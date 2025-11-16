@@ -13,6 +13,7 @@ public class ItemStatistics
 
     public ItemStatistics(){}
 
+    [JsonConstructor]
     public ItemStatistics(int likes, int viewCount, int contacts)
     {
         this.Likes = likes;

@@ -6,8 +6,10 @@ using System.Net.Http.Json;
 
 using Xunit;
 using Xunit.Abstractions;
+using System.Text;
+using System.Data.Common;
 
-public class ApiTests
+public class ApiTests : IDisposable
 {
 	private HttpClient _httpClient = new HttpClient();
 	private JsonSerializerOptions _jsonOptions = new JsonSerializerOptions
@@ -27,11 +29,16 @@ public class ApiTests
 		_httpClient.BaseAddress = new Uri("https://qa-internship.avito.com/api/1");
 	}
 
+	public void Dispose()
+	{
+		_httpClient.Dispose();
+	}
+
 	[Fact]
 	public async void Test_PostSaveItem()
 	{
 		// arrange
-		var requestBody = new Item(
+		var item = new Item(
 			sellerId: 555999,
 			name: "Test",
 			price: 100_000,
@@ -44,14 +51,13 @@ public class ApiTests
 
 		// act
 
-		var response = await _httpClient.PostAsJsonAsync("/api/1/item", requestBody, _jsonOptions);
+		var response = await _httpClient.PostAsJsonAsync("/api/1/item", item, _jsonOptions);
 
 		// assert
 
 		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
 		var responseData = await response.Content.ReadFromJsonAsync<PostItemResponse>(_jsonOptions);
-
 		Assert.NotNull(responseData);
 		Assert.False(string.IsNullOrEmpty(responseData.Status));
 
@@ -64,18 +70,74 @@ public class ApiTests
 		}
 	}
 
+	public async Task<Item> PostNewItem()
+	{
+		string? result = "";
+
+		var item = new Item(
+			sellerId: 555999,
+			name: "Test",
+			price: 100_000,
+			new ItemStatistics(
+				likes: 999_999_999,
+				viewCount: 100_000,
+				contacts: 50
+			)
+		);
+
+		var postResponse = await _httpClient.PostAsJsonAsync("/api/1/item", item, _jsonOptions);
+		var responseData = await postResponse.Content.ReadFromJsonAsync<PostItemResponse>(_jsonOptions);
+
+		if (responseData != null)
+		{
+			result = responseData.Status.Split(' ').LastOrDefault();
+		}
+
+		item.Id = result;
+
+		return item;
+	}
+
 	[Fact]
 	public async void Test_GetItemById()
 	{
-		var response = await _httpClient.GetAsync($"/api/1/item/d8971d48-bf9d-40f7-b917-bbbc242a0b16");
+		// arrange
+
+		var item = await PostNewItem();
+		string? newItemId = item.Id;
+
+		// act
+
+		var response = await _httpClient.GetAsync($"/api/1/item/{newItemId}");
+		List<Item>? items = await response.Content.ReadFromJsonAsync<List<Item>>(_jsonOptions);
+		Item? itemBody = items?.FirstOrDefault();
+
+		// assert
 
 		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+		Assert.NotNull(itemBody);
+		Assert.Equal(item.CreatedAt, itemBody.CreatedAt);
+		Assert.Equal(item.Id, itemBody.Id);
+		Assert.Equal(item.SellerId, itemBody.SellerId);
+		Assert.Equal(item.Name, itemBody.Name);
+		Assert.Equal(item.Price, itemBody.Price);
+		Assert.Equal(item.Statistics.Likes, itemBody.Statistics.Likes);
+		Assert.Equal(item.Statistics.ViewCount, itemBody.Statistics.ViewCount);
+		Assert.Equal(item.Statistics.Contacts, itemBody.Statistics.Contacts);
 	}
 
 	[Fact]
 	public async void Test_GetStatisticByItemId()
 	{
-		var response = await _httpClient.GetAsync($"/api/1/statistic/d8971d48-bf9d-40f7-b917-bbbc242a0b16");
+		// arrange
+
+		var item = await PostNewItem();
+		string? newItemId = item.Id;
+
+		var response = await _httpClient.GetAsync($"/api/1/statistic/{newItemId}");
+
+		// assert
 
 		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 	}
@@ -83,8 +145,11 @@ public class ApiTests
 	[Fact]
 	public async void Test_GetSellerById()
 	{
-		var response = await _httpClient.GetAsync($"/api/1/555999/item");
+		// arrange
 
+		var item = await PostNewItem();
+
+		var response = await _httpClient.GetAsync($"/api/1/{item.SellerId}/item");
 		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 	}
 }
