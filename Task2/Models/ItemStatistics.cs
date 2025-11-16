@@ -5,7 +5,6 @@ using System.Text.Json.Serialization;
 public class ItemStatistics
 {
 	[JsonPropertyName("likes")]
-
 	public int Likes { get; private set; } = 0;
 
 	[JsonPropertyName("viewCount")]
