@@ -16,6 +16,8 @@ public class ApiTests
 		PropertyNameCaseInsensitive = true
 	};
 
+	private string _itemId = "";
+
 	private readonly ITestOutputHelper _output;
 
 	public ApiTests(ITestOutputHelper output)
@@ -42,18 +44,47 @@ public class ApiTests
 
 		// act
 
-		var postResponse = await _httpClient.PostAsJsonAsync("/api/1/item", requestBody, _jsonOptions);
+		var response = await _httpClient.PostAsJsonAsync("/api/1/item", requestBody, _jsonOptions);
 
 		// assert
 
-		Assert.Equal(HttpStatusCode.OK, postResponse.StatusCode);
+		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-		var postResponseData = await postResponse.Content.ReadFromJsonAsync<PostItemResponse>(_jsonOptions);
+		var responseData = await response.Content.ReadFromJsonAsync<PostItemResponse>(_jsonOptions);
 
-		Assert.NotNull(postResponseData);
-		Assert.False(string.IsNullOrEmpty(postResponseData.Status));
+		Assert.NotNull(responseData);
+		Assert.False(string.IsNullOrEmpty(responseData.Status));
 
-		string? newItemId = postResponseData.Status.Split(' ').LastOrDefault();
+		string? newItemId = responseData.Status.Split(' ').LastOrDefault();
 		Assert.False(string.IsNullOrEmpty(newItemId));
+
+		if (newItemId != null)
+		{
+			_itemId = newItemId;
+		}
+	}
+
+	[Fact]
+	public async void Test_GetItemById()
+	{
+		var response = await _httpClient.GetAsync($"/api/1/item/d8971d48-bf9d-40f7-b917-bbbc242a0b16");
+
+		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+	}
+
+	[Fact]
+	public async void Test_GetStatisticByItemId()
+	{
+		var response = await _httpClient.GetAsync($"/api/1/statistic/d8971d48-bf9d-40f7-b917-bbbc242a0b16");
+
+		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+	}
+
+	[Fact]
+	public async void Test_GetSellerById()
+	{
+		var response = await _httpClient.GetAsync($"/api/1/555999/item");
+
+		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 	}
 }
