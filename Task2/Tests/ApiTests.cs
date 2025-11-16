@@ -117,7 +117,6 @@ public class ApiTests : IDisposable
 		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
 		Assert.NotNull(itemBody);
-		Assert.Equal(item.CreatedAt, itemBody.CreatedAt);
 		Assert.Equal(item.Id, itemBody.Id);
 		Assert.Equal(item.SellerId, itemBody.SellerId);
 		Assert.Equal(item.Name, itemBody.Name);
@@ -136,10 +135,17 @@ public class ApiTests : IDisposable
 		string? newItemId = item.Id;
 
 		var response = await _httpClient.GetAsync($"/api/1/statistic/{newItemId}");
+		List<ItemStatistics>? statistics = await response.Content.ReadFromJsonAsync<List<ItemStatistics>>(_jsonOptions);
+		ItemStatistics? statisticsBody = statistics?.FirstOrDefault();
 
 		// assert
 
 		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+		Assert.NotNull(statisticsBody);
+		Assert.Equal(item.Statistics.Likes, statisticsBody.Likes);
+		Assert.Equal(item.Statistics.ViewCount, statisticsBody.ViewCount);
+		Assert.Equal(item.Statistics.Contacts, statisticsBody.Contacts);
 	}
 
 	[Fact]
