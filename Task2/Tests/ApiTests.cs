@@ -26,7 +26,7 @@ public class ApiTests : IDisposable
 	{
 		_output = output;
 
-		_httpClient.BaseAddress = new Uri("https://qa-internship.avito.com/api/1");
+		_httpClient.BaseAddress = new Uri(ApiUtils.URI);
 	}
 
 	public void Dispose()
@@ -70,32 +70,22 @@ public class ApiTests : IDisposable
 		}
 	}
 
-	public async Task<Item> PostNewItem()
+	[Fact]
+	public async void Test_PostSaveInvalidItem()
 	{
-		string? result = "";
-
-		var item = new Item(
-			sellerId: 555999,
-			name: "Test",
-			price: 100_000,
-			new ItemStatistics(
-				likes: 999_999_999,
-				viewCount: 100_000,
-				contacts: 50
-			)
-		);
-
-		var postResponse = await _httpClient.PostAsJsonAsync("/api/1/item", item, _jsonOptions);
-		var responseData = await postResponse.Content.ReadFromJsonAsync<PostItemResponse>(_jsonOptions);
-
-		if (responseData != null)
+		// arrange
+		var item = new
 		{
-			result = responseData.Status.Split(' ').LastOrDefault();
-		}
 
-		item.Id = result;
+		};
 
-		return item;
+		// act
+
+		var response = await _httpClient.PostAsJsonAsync("/api/1/item", item, _jsonOptions);
+
+		// assert
+
+		Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 	}
 
 	[Fact]
@@ -103,7 +93,7 @@ public class ApiTests : IDisposable
 	{
 		// arrange
 
-		var item = await PostNewItem();
+		var item = await ApiUtils.PostNewItem(Item.GetTestItem());
 		string? newItemId = item.Id;
 
 		// act
@@ -127,18 +117,44 @@ public class ApiTests : IDisposable
 	}
 
 	[Fact]
+	public async void Test_GetInvalidItemById()
+	{
+		var response = await _httpClient.GetAsync($"/api/1/item/-1");
+		Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+	}
+
+	[Fact]
+	public async void Test_GetNonExistentItemById()
+	{
+		var response = await _httpClient.GetAsync($"/api/1/item/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+		Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+	}
+
+	[Fact]
+	public async void Test_GetSellerById()
+	{
+		var item = await ApiUtils.PostNewItem(Item.GetTestItem());
+
+		var response = await _httpClient.GetAsync($"/api/1/{item.SellerId}/item");
+		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+	}
+
+	[Fact]
+	public async void Test_GetInvalidSellerById()
+	{
+		var response = await _httpClient.GetAsync($"/api/1/bad_request/item");
+		Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+	}
+
+	[Fact]
 	public async void Test_GetStatisticByItemId()
 	{
-		// arrange
-
-		var item = await PostNewItem();
+		var item = await ApiUtils.PostNewItem(Item.GetTestItem());
 		string? newItemId = item.Id;
 
 		var response = await _httpClient.GetAsync($"/api/1/statistic/{newItemId}");
 		List<ItemStatistics>? statistics = await response.Content.ReadFromJsonAsync<List<ItemStatistics>>(_jsonOptions);
 		ItemStatistics? statisticsBody = statistics?.FirstOrDefault();
-
-		// assert
 
 		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -149,13 +165,10 @@ public class ApiTests : IDisposable
 	}
 
 	[Fact]
-	public async void Test_GetSellerById()
+	public async void Test_GetStatisticByInvalidItemId()
 	{
-		// arrange
+		var response = await _httpClient.GetAsync($"/api/1/statistic/-1");
 
-		var item = await PostNewItem();
-
-		var response = await _httpClient.GetAsync($"/api/1/{item.SellerId}/item");
-		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+		Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 	}
 }

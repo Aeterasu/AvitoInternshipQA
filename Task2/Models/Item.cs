@@ -36,4 +36,18 @@ public class Item
 		this.Price = price;
 		this.Statistics = statistics;
 	}
+
+	public static Item GetTestItem()
+	{
+		return new Item(
+			sellerId: 555999,
+			name: "Test",
+			price: 100_000,
+			new ItemStatistics(
+				likes: 999_999_999,
+				viewCount: 100_000,
+				contacts: 50
+			)
+		);		
+	}
 }
