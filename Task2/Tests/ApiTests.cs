@@ -38,16 +38,7 @@ public class ApiTests : IDisposable
 	public async void Test_PostSaveItem()
 	{
 		// arrange
-		var item = new Item(
-			sellerId: 555999,
-			name: "Test",
-			price: 100_000,
-			new ItemStatistics(
-				likes: 999_999_999,
-				viewCount: 100_000,
-				contacts: 50
-			)
-		);
+		var item = Item.GetTestItem();
 
 		// act
 
