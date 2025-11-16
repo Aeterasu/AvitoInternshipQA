@@ -126,7 +126,7 @@ public class ApiTests : IDisposable
 	[Fact]
 	public async void Test_GetNonExistentItemById()
 	{
-		var response = await _httpClient.GetAsync($"/api/1/item/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+		var response = await _httpClient.GetAsync($"/api/1/item/aaaa1111-aa11-aa11-aa11-aaaaaaaa1111");
 		Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
 	}
 
@@ -170,5 +170,13 @@ public class ApiTests : IDisposable
 		var response = await _httpClient.GetAsync($"/api/1/statistic/-1");
 
 		Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+	}
+
+	[Fact]
+	public async void Test_GetStatisticByNonExistentItemId()
+	{
+		var response = await _httpClient.GetAsync($"/api/1/statistic/aaaa1111-aa11-aa11-aa11-aaaaaaaa1111");
+
+		Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
 	}
 }
